@@ -3,7 +3,6 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 from werkzeug import secure_filename
 import numpy as np
 import pandas as pd
-import os
 import keras.backend as K
 from keras.applications import VGG16
 from keras.preprocessing.image import load_img, save_img, img_to_array
@@ -179,6 +178,7 @@ def upload():
 
     
     # Get the name of the uploaded files
+
     uploaded_files = request.files.getlist("file[]")
     filenames = []
     for file in uploaded_files:
@@ -186,35 +186,17 @@ def upload():
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             filenames.append(filename)
+  	
+
+
 
     content_path = filenames[0]
     style_path = filenames[1]
 
-    print(content_path)
-    print(style_path)
 
-    generated_img = np.random.uniform(0, 255, (1, img_height, img_width, 3)) - 128.
-    content = process_img(content_path)
-    style = process_img(style_path)
+    filenames.append(generated_img)
 
-    content_image = K.variable(content)
-    style_image = K.variable(style)
-    generated_image = K.placeholder((1, img_height, img_width, 3))
-    loss = K.variable(0.)
-
-    content_layer, style_layers = get_layers(content_image, style_image, generated_image)
-
-    loss = total_loss(content_layer, style_layers, generated_image)
-    grads = K.gradients(loss, generated_image)
-
-    evaluator = Evaluator()
-    iterations = 10
-
-    outputs = [loss]
-    outputs += grads
-    f_outputs = K.function([generated_image], outputs)
-
-    for i in range(2):
+    for i in range(0):
         print('Iteration:', i)
         start_time = time.time()
         generated_img, min_val, info = fmin_l_bfgs_b(evaluator.loss, generated_img.flatten(),
@@ -224,9 +206,9 @@ def upload():
         print('Iteration {} took {} seconds'.format(i, end_time - start_time))
         name = 'uploads/{}-{}{}'.format(1, i, ".jpg")
         save_image(name,generated_img)
+        filenames.append(generated_img)
         print('Saved image to: {}'.format(name))
     return render_template('upload.html', filenames=filenames)
-
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -234,8 +216,4 @@ def uploaded_file(filename):
                                filename)
 
 if __name__ == '__main__':
-    app.run(
-        host="0.0.0.0",
-        port=int("4555"),
-        debug=True
-    )
+    app.run(host="0.0.0.0",port=int("4556"),debug=True)
